@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { ClaudeService } from '@/lib/ai/claude-service'
+import { OpenAIService } from '@/lib/ai/openai-service'
 
 export async function POST(
   request: NextRequest,
@@ -25,7 +25,7 @@ export async function POST(
       return NextResponse.json({ error: 'Container not found' }, { status: 404 })
     }
 
-    const insight = await ClaudeService.generateDelayInsight({
+    const insight = await OpenAIService.generateDelayInsight({
       container_id: container.container_id,
       status: container.status,
       current_location: container.current_location || undefined,

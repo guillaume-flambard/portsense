@@ -1,4 +1,4 @@
-import { ContainerData } from './claude-service'
+import { ContainerData } from './openai-service'
 
 export const AI_PROMPTS = {
   statusSummary: (data: ContainerData) => `

@@ -134,7 +134,7 @@ export function PublicContainerView({ container, history }: PublicContainerViewP
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">🔄 Last Updated</h3>
               <p className="text-lg font-semibold text-gray-900">
-                {formatDistanceToNow(new Date(container.last_updated))} ago
+                {container.last_updated ? formatDistanceToNow(new Date(container.last_updated)) + ' ago' : 'Unknown'}
               </p>
             </div>
 

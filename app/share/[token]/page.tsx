@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { PublicContainerView } from '@/components/public-container-view'
 import { format } from 'date-fns'
 
@@ -68,9 +69,9 @@ export default async function PublicContainerPage({
             <p>This tracking page was generated on {format(new Date(), 'PPP')}</p>
             <p className="mt-1">
               Want your own container tracking solution? Visit{' '}
-              <a href="/" className="text-blue-600 hover:text-blue-500">
+              <Link href="/" className="text-blue-600 hover:text-blue-500">
                 PortSense
-              </a>
+              </Link>
             </p>
           </div>
         </div>

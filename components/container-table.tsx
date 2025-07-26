@@ -202,12 +202,12 @@ export function ContainerTable({ containers }: ContainerTableProps) {
                   {container.eta ? format(new Date(container.eta), 'MMM d, yyyy') : '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(container.risk_level)}`}>
-                    {container.risk_level}
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(container.risk_level || 'Low')}`}>
+                    {container.risk_level || 'Low'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDistanceToNow(new Date(container.last_updated))} ago
+                  {container.last_updated ? formatDistanceToNow(new Date(container.last_updated)) + ' ago' : 'Unknown'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Link

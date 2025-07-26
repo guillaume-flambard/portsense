@@ -80,7 +80,7 @@ export class ContainerService {
     return this.createContainer(containerData)
   }
 
-  async getContainerHistory(containerId: string): Promise<any[]> {
+  async getContainerHistory(containerId: string): Promise<Database['public']['Tables']['container_history']['Row'][]> {
     const { data, error } = await this.supabase
       .from('container_history')
       .select('*')
@@ -91,7 +91,7 @@ export class ContainerService {
     return data || []
   }
 
-  async updateAISummary(containerId: string, preferredProvider?: 'claude' | 'openai'): Promise<void> {
+  async updateAISummary(containerId: string, preferredProvider?: 'openai'): Promise<void> {
     const { data: container } = await this.supabase
       .from('containers')
       .select('*')
@@ -119,7 +119,7 @@ export class ContainerService {
     }
   }
 
-  async generateWeeklyReport(userId: string, preferredProvider?: 'claude' | 'openai'): Promise<string> {
+  async generateWeeklyReport(userId: string, preferredProvider?: 'openai'): Promise<string> {
     const containers = await this.getContainers(userId)
     
     // Filter to last 7 days
@@ -127,7 +127,7 @@ export class ContainerService {
     weekAgo.setDate(weekAgo.getDate() - 7)
     
     const recentContainers = containers.filter(c => 
-      new Date(c.last_updated) >= weekAgo
+      c.last_updated && new Date(c.last_updated) >= weekAgo
     )
 
     const containerData = recentContainers.map(c => ({

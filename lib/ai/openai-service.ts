@@ -1,6 +1,18 @@
 import { openai } from './openai-client'
-import { ContainerData } from './claude-service'
 import { AI_PROMPTS } from './prompts'
+
+export interface ContainerData {
+  container_id: string
+  status: string
+  current_location?: string
+  origin_port?: string
+  destination_port?: string
+  eta?: string
+  delay_hours: number
+  carrier?: string
+  issues?: string[]
+  vessel_name?: string
+}
 
 export class OpenAIService {
   static async generateStatusSummary(containerData: ContainerData): Promise<string> {
@@ -28,6 +40,10 @@ export class OpenAIService {
   }
 
   static async generateDelayInsight(containerData: ContainerData): Promise<string> {
+    if (!process.env.OPENAI_API_KEY) {
+      return 'Delay analysis unavailable.'
+    }
+
     try {
       const response = await openai.chat.completions.create({
         model: 'gpt-4',
@@ -48,6 +64,10 @@ export class OpenAIService {
   }
 
   static async generateWeeklyReport(containers: ContainerData[]): Promise<string> {
+    if (!process.env.OPENAI_API_KEY) {
+      return 'Weekly report generation failed - OpenAI API key not configured.'
+    }
+
     try {
       const response = await openai.chat.completions.create({
         model: 'gpt-4',
@@ -68,6 +88,10 @@ export class OpenAIService {
   }
 
   static async generateAlertMessage(containerData: ContainerData, alertType: string): Promise<string> {
+    if (!process.env.OPENAI_API_KEY) {
+      return `Alert: Container ${containerData.container_id} - ${alertType}`
+    }
+
     try {
       const response = await openai.chat.completions.create({
         model: 'gpt-4',

@@ -14,7 +14,7 @@ async function testAIProviders() {
     issues: ['Weather delay'],
   }
 
-  const providers: ('claude' | 'openai')[] = ['claude', 'openai']
+  const providers: ('openai')[] = ['openai']
 
   for (const provider of providers) {
     console.log(`Testing ${provider.toUpperCase()}...`)

@@ -43,14 +43,8 @@ export class AlertService {
 
     if (!container) return
 
-    // Get user's AI provider preference
-    const { data: preferences } = await this.supabase
-      .from('user_preferences')
-      .select('ai_provider')
-      .eq('user_id', container.user_id)
-      .single()
-
-    const preferredProvider = preferences?.ai_provider || undefined
+    // Use OpenAI as the only provider (ai_provider column doesn't exist)
+    const preferredProvider = 'openai' as const
 
     // Check for delay alerts
     if (container.delay_hours > 12) {

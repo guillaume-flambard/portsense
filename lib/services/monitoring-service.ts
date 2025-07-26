@@ -166,7 +166,7 @@ export class MonitoringService {
         user.email,
         alert,
         alert.containers,
-        preferences
+        preferences || undefined
       )
 
       // Update alert status

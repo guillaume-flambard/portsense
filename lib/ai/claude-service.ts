@@ -1,3 +1,5 @@
+// COMMENTED OUT - Using OpenAI only for now
+/*
 import { anthropic } from './claude-client'
 import { AI_PROMPTS } from './prompts'
 
@@ -95,3 +97,4 @@ export class ClaudeService {
     }
   }
 }
+*/

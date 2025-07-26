@@ -41,48 +41,33 @@ export type Database = {
     Tables: {
       alerts: {
         Row: {
-          acknowledged_at: string | null
-          ai_generated: boolean | null
-          alert_type: string | null
+          acknowledged: boolean | null
           container_id: string | null
           created_at: string
-          email_sent: boolean | null
           id: string
           message: string
           severity: string
-          slack_sent: boolean | null
-          sms_sent: boolean | null
-          title: string | null
+          type: string
           user_id: string
         }
         Insert: {
-          acknowledged_at?: string | null
-          ai_generated?: boolean | null
-          alert_type?: string | null
+          acknowledged?: boolean | null
           container_id?: string | null
           created_at?: string
-          email_sent?: boolean | null
           id?: string
           message: string
           severity?: string
-          slack_sent?: boolean | null
-          sms_sent?: boolean | null
-          title?: string | null
+          type: string
           user_id: string
         }
         Update: {
-          acknowledged_at?: string | null
-          ai_generated?: boolean | null
-          alert_type?: string | null
+          acknowledged?: boolean | null
           container_id?: string | null
           created_at?: string
-          email_sent?: boolean | null
           id?: string
           message?: string
           severity?: string
-          slack_sent?: boolean | null
-          sms_sent?: boolean | null
-          title?: string | null
+          type?: string
           user_id?: string
         }
         Relationships: [
@@ -119,114 +104,48 @@ export type Database = {
         }
         Relationships: []
       }
-      container_history: {
-        Row: {
-          container_id: string
-          delay_hours: number | null
-          eta: string | null
-          id: string
-          latitude: number | null
-          location: string | null
-          longitude: number | null
-          recorded_at: string
-          status: string | null
-        }
-        Insert: {
-          container_id: string
-          delay_hours?: number | null
-          eta?: string | null
-          id?: string
-          latitude?: number | null
-          location?: string | null
-          longitude?: number | null
-          recorded_at?: string
-          status?: string | null
-        }
-        Update: {
-          container_id?: string
-          delay_hours?: number | null
-          eta?: string | null
-          id?: string
-          latitude?: number | null
-          location?: string | null
-          longitude?: number | null
-          recorded_at?: string
-          status?: string | null
-        }
-        Relationships: []
-      }
       containers: {
         Row: {
-          ai_summary: string | null
           carrier: string | null
           container_id: string
           created_at: string
-          current_location: string | null
-          delay_hours: number
-          destination_port: string | null
+          delay_hours: number | null
+          destination: string | null
           eta: string | null
           id: string
-          is_active: boolean | null
           issues: string[] | null
-          last_updated: string | null
-          latitude: number | null
-          longitude: number | null
-          origin_port: string | null
-          original_eta: string | null
-          risk_level: string | null
+          last_location: string | null
           status: string
           updated_at: string
           user_id: string
-          vessel_name: string | null
-          voyage_number: string | null
         }
         Insert: {
-          ai_summary?: string | null
           carrier?: string | null
           container_id: string
           created_at?: string
-          current_location?: string | null
-          delay_hours?: number
-          destination_port?: string | null
+          delay_hours?: number | null
+          destination?: string | null
           eta?: string | null
           id?: string
-          is_active?: boolean | null
           issues?: string[] | null
-          last_updated?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          origin_port?: string | null
-          original_eta?: string | null
-          risk_level?: string | null
+          last_location?: string | null
           status?: string
           updated_at?: string
           user_id: string
-          vessel_name?: string | null
-          voyage_number?: string | null
         }
         Update: {
-          ai_summary?: string | null
           carrier?: string | null
           container_id?: string
           created_at?: string
-          current_location?: string | null
-          delay_hours?: number
-          destination_port?: string | null
+          delay_hours?: number | null
+          destination?: string | null
           eta?: string | null
           id?: string
-          is_active?: boolean | null
           issues?: string[] | null
-          last_updated?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          origin_port?: string | null
-          original_eta?: string | null
-          risk_level?: string | null
+          last_location?: string | null
           status?: string
           updated_at?: string
           user_id?: string
-          vessel_name?: string | null
-          voyage_number?: string | null
         }
         Relationships: []
       }
@@ -255,45 +174,6 @@ export type Database = {
           display_name?: string | null
           id?: string
           role?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_preferences: {
-        Row: {
-          created_at: string
-          date_format: string
-          delay_threshold_hours: number
-          email_alerts: boolean
-          high_risk_threshold: number
-          slack_webhook_url: string | null
-          sms_alerts: boolean
-          timezone: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          date_format?: string
-          delay_threshold_hours?: number
-          email_alerts?: boolean
-          high_risk_threshold?: number
-          slack_webhook_url?: string | null
-          sms_alerts?: boolean
-          timezone?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          date_format?: string
-          delay_threshold_hours?: number
-          email_alerts?: boolean
-          high_risk_threshold?: number
-          slack_webhook_url?: string | null
-          sms_alerts?: boolean
-          timezone?: string
           updated_at?: string
           user_id?: string
         }

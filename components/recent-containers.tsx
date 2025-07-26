@@ -45,7 +45,7 @@ export function RecentContainers({ containers }: RecentContainersProps) {
                     </p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">
-                    Updated {formatDistanceToNow(new Date(container.last_updated))} ago
+                    Updated {container.last_updated ? formatDistanceToNow(new Date(container.last_updated)) + ' ago' : 'recently'}
                   </p>
                 </div>
                 <div className="text-right">
