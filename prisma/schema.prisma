@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Container {
+  id               String    @id @default(cuid())
+  user_id          String
+  container_id     String
+  status           String
+  current_location String?
+  origin_port      String?
+  destination_port String?
+  eta              DateTime?
+  delay_hours      Int       @default(0)
+  carrier          String?
+  vessel_name      String?
+  voyage_number    String?
+  original_eta     DateTime?
+  latitude         Float?
+  longitude        Float?
+  risk_level       String?   @default("Low")
+  issues           String[]  @default([])
+  ai_summary       String?
+  last_updated     DateTime?
+  is_active        Boolean?  @default(true)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  alerts Alert[]
+  
+  @@map("containers")
+}
+
+model Alert {
+  id               String    @id @default(cuid())
+  user_id          String
+  container_id     String?
+  title            String?
+  message          String
+  severity         String    @default("Medium")
+  alert_type       String?
+  ai_generated     Boolean?  @default(false)
+  email_sent       Boolean?  @default(false)
+  sms_sent         Boolean?  @default(false)
+  slack_sent       Boolean?  @default(false)
+  acknowledged_at  DateTime?
+  created_at       DateTime  @default(now())
+
+  container Container? @relation(fields: [container_id], references: [id])
+  
+  @@map("alerts")
+}
+
+model ContainerHistory {
+  id           String    @id @default(cuid())
+  container_id String
+  status       String?
+  location     String?
+  latitude     Float?
+  longitude    Float?
+  eta          DateTime?
+  delay_hours  Int?
+  recorded_at  DateTime  @default(now())
+  
+  @@map("container_history")
+}
+
+model UserPreferences {
+  user_id                String   @id
+  email_alerts           Boolean  @default(true)
+  sms_alerts             Boolean  @default(false)
+  slack_webhook_url      String?
+  delay_threshold_hours  Int      @default(6)
+  high_risk_threshold    Int      @default(24)
+  timezone               String   @default("UTC")
+  date_format            String   @default("YYYY-MM-DD")
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+  
+  @@map("user_preferences")
+}
+
+model Profile {
+  id           String   @id @default(cuid())
+  user_id      String   @unique
+  display_name String?
+  company_name String?
+  role         String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  
+  @@map("profiles")
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  user_id    String
+  sender     String
+  content    String
+  created_at DateTime @default(now())
+  
+  @@map("chat_messages")
+}
