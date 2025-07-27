@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { QueryClientProviderWrapper } from "@/lib/providers/query-client-provider";
+import { SimpleQueryProvider } from "@/lib/providers/simple-query-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { Toaster } from "sonner";
 
 const inter = Inter({
@@ -24,10 +25,12 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased`}
       >
-        <QueryClientProviderWrapper>
-          {children}
-          <Toaster richColors position="top-right" />
-        </QueryClientProviderWrapper>
+        <ErrorBoundary>
+          <SimpleQueryProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </SimpleQueryProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

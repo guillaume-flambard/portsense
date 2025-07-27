@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { ContainerMap } from '@/components/container-map'
 import { ContainerTimeline } from '@/components/container-timeline'
 import { TanStackRealTimeDashboard } from '@/components/tanstack-real-time-dashboard'
-import { ContainersTable } from '@/components/containers-table'
+import { SimpleContainersList } from '@/components/simple-containers-list'
+import { RealtimeNotifications } from '@/components/realtime-notifications'
 import { useContainers } from '@/hooks/use-containers-query'
 import { useRealtimeSync } from '@/hooks/use-realtime-sync'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,6 +35,8 @@ export default function DashboardMapsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
+      {/* Real-time notifications */}
+      <RealtimeNotifications containers={containers} />
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-4">
@@ -55,6 +59,57 @@ export default function DashboardMapsPage() {
           <Badge variant="secondary" className="text-xs">
             {containers.length} containers tracked
           </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              toast.info('💡 Real-time Demo', {
+                description: 'Run "npm run simulate-realtime" in terminal to see live updates',
+                duration: 8000,
+                action: {
+                  label: 'Copy Command',
+                  onClick: () => {
+                    navigator.clipboard.writeText('npm run simulate-realtime')
+                    toast.success('Command copied to clipboard!')
+                  }
+                }
+              })
+            }}
+          >
+            🚀 Test Real-time
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              // Debug function to identify gray zones
+              const mapContainers = document.querySelectorAll('.leaflet-container')
+              const greyElements = document.querySelectorAll('[style*="background: #aaa"], [style*="background: gray"], [style*="background-color: #aaa"]')
+              
+              toast.info('🔍 Map Debug Info', {
+                description: `Found ${mapContainers.length} map containers, ${greyElements.length} gray elements`,
+                duration: 10000,
+                action: {
+                  label: 'Console Log',
+                  onClick: () => {
+                    console.log('🗺️ Map containers:', mapContainers)
+                    console.log('🔘 Gray elements:', greyElements)
+                    
+                    // Force invalidate all maps
+                    mapContainers.forEach((container: any) => {
+                      if (container._leaflet_map) {
+                        container._leaflet_map.invalidateSize()
+                      }
+                    })
+                    
+                    toast.success('Map invalidation forced!')
+                  }
+                }
+              })
+            }}
+          >
+            🔍 Debug Map
+          </Button>
         </div>
       </div>
 
@@ -118,7 +173,23 @@ export default function DashboardMapsPage() {
       </Card>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="map" className="space-y-4">
+      <Tabs 
+        defaultValue="map" 
+        className="space-y-4"
+        onValueChange={(value) => {
+          // Force map invalidation when switching to map tab
+          if (value === 'map') {
+            setTimeout(() => {
+              const mapContainers = document.querySelectorAll('.leaflet-container')
+              mapContainers.forEach((container: any) => {
+                if (container._leaflet_map) {
+                  container._leaflet_map.invalidateSize()
+                }
+              })
+            }, 100)
+          }
+        }}
+      >
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="map" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
@@ -242,7 +313,7 @@ export default function DashboardMapsPage() {
 
         {/* Advanced Table Tab */}
         <TabsContent value="table" className="space-y-4">
-          <ContainersTable />
+          <SimpleContainersList />
         </TabsContent>
       </Tabs>
 

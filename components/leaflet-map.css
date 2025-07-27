@@ -1,0 +1,149 @@
+/* Fix Leaflet CSS issues and gray zones */
+.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+  background: #f0f8ff !important; /* Light blue instead of gray */
+  position: relative !important;
+  overflow: hidden !important;
+  z-index: 1 !important;
+  cursor: grab !important;
+}
+
+.leaflet-container:active {
+  cursor: grabbing !important;
+}
+
+/* Force proper tile loading */
+.leaflet-tile-container {
+  filter: none !important;
+  transform: translate3d(0,0,0) !important;
+}
+
+.leaflet-fade-anim .leaflet-tile {
+  will-change: auto !important;
+  transition: opacity 0.2s !important;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+  will-change: auto !important;
+  transition: transform 0.25s cubic-bezier(0,0,0.25,1) !important;
+}
+
+/* Fix gray tiles issue completely */
+.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+  display: block !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure map wrapper has proper dimensions */
+.map-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 400px !important;
+  overflow: hidden !important;
+  border-radius: 0.5rem !important;
+  z-index: 0 !important;
+  pointer-events: auto !important;
+}
+
+/* Fix marker interactions */
+.leaflet-marker-icon {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.leaflet-popup-pane {
+  pointer-events: auto !important;
+  z-index: 700 !important;
+}
+
+/* Fix any potential overlay issues */
+.leaflet-control-container {
+  pointer-events: auto !important;
+  z-index: 1000 !important;
+}
+
+/* Remove any problematic backgrounds */
+.leaflet-tile-loaded {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Fix attribution positioning */
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.8) !important;
+  font-size: 10px !important;
+}
+
+/* Container popup styling */
+.container-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.1);
+  max-width: 400px !important;
+  min-width: 320px !important;
+  animation: fadeInUp 0.2s ease-out;
+}
+
+.container-popup .leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4;
+  max-height: 500px;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Smooth popup animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.container-popup .leaflet-popup-tip {
+  background: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.container-popup .leaflet-popup-close-button {
+  color: #666 !important;
+  font-size: 18px !important;
+  padding: 8px !important;
+  line-height: 1 !important;
+  right: 8px !important;
+  top: 8px !important;
+}
+
+.container-popup .leaflet-popup-close-button:hover {
+  color: #333 !important;
+  background: rgba(0,0,0,0.05) !important;
+  border-radius: 4px;
+}
+
+/* Enhanced marker styling */
+.custom-marker-enhanced {
+  border: none !important;
+  background: transparent !important;
+}
+
+.custom-marker-enhanced div {
+  transform-origin: center center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-marker-enhanced:hover div {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+  z-index: 1001 !important;
+}

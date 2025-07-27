@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo, memo, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { formatDistanceToNow } from 'date-fns'
@@ -11,66 +11,116 @@ import { ExternalLink, MapPin, Clock, AlertTriangle } from 'lucide-react'
 
 // Fix default markers in Leaflet
 import 'leaflet/dist/leaflet.css'
+import './leaflet-map.css'
 
-// Custom marker icons
+// Custom marker icons - Enhanced visibility and click area
 const createCustomIcon = (color: string, icon: string) => {
   return L.divIcon({
     html: `
       <div style="
         background-color: ${color};
-        width: 25px;
-        height: 25px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        border: 3px solid white;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
-      ">
+        font-size: 16px;
+        cursor: pointer;
+        position: relative;
+        z-index: 1000;
+      "
+      >
         ${icon}
       </div>
     `,
-    className: 'custom-div-icon',
-    iconSize: [25, 25],
-    iconAnchor: [12, 12],
+    className: 'custom-marker-enhanced',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -20],
   })
 }
 
-interface MapViewControllerProps {
+// Component to capture map instance and handle events
+interface MapInitializerProps {
   center: [number, number]
   zoom: number
-  onMapViewChange: (view: { center: [number, number]; zoom: number }) => void
+  setMapInstance: (map: L.Map) => void
 }
 
-function MapViewController({ center, zoom, onMapViewChange }: MapViewControllerProps) {
+const MapInitializer = memo(function MapInitializer({ 
+  center, 
+  zoom, 
+  setMapInstance 
+}: MapInitializerProps) {
   const map = useMap()
+  const prevCenter = useRef<[number, number] | null>(null)
+  const prevZoom = useRef<number | null>(null)
+  const isInitialized = useRef(false)
 
+  // Capture map instance and initialize
   useEffect(() => {
-    map.setView(center, zoom)
-  }, [map, center, zoom])
+    setMapInstance(map)
+    
+    // Force invalidate size multiple times to ensure proper rendering
+    const timers = [
+      setTimeout(() => map.invalidateSize(), 50),
+      setTimeout(() => map.invalidateSize(), 150),
+      setTimeout(() => map.invalidateSize(), 300)
+    ]
 
-  useEffect(() => {
-    const handleMoveEnd = () => {
-      const mapCenter = map.getCenter()
-      const mapZoom = map.getZoom()
-      onMapViewChange({
-        center: [mapCenter.lat, mapCenter.lng],
-        zoom: mapZoom
-      })
-    }
+    // Remove automatic popup closing to preserve marker positions
 
-    map.on('moveend', handleMoveEnd)
-    map.on('zoomend', handleMoveEnd)
+    // Set initialized flag
+    isInitialized.current = true
 
     return () => {
-      map.off('moveend', handleMoveEnd)
-      map.off('zoomend', handleMoveEnd)
+      timers.forEach(timer => clearTimeout(timer))
     }
-  }, [map, onMapViewChange])
+  }, [map, setMapInstance])
+
+  // Handle view changes with better bounds checking and popup management
+  useEffect(() => {
+    if (!map || !isInitialized.current) return
+
+    // Validate coordinates are within world bounds
+    if (Math.abs(center[0]) > 85 || Math.abs(center[1]) > 180) {
+      console.warn('Invalid coordinates provided:', center)
+      return
+    }
+
+    // Check if the new center/zoom is significantly different (much higher thresholds)
+    const centerChanged = !prevCenter.current || 
+      Math.abs(prevCenter.current[0] - center[0]) > 1.0 ||
+      Math.abs(prevCenter.current[1] - center[1]) > 1.0
+
+    const zoomChanged = !prevZoom.current || Math.abs(prevZoom.current - zoom) > 2
+
+    if (centerChanged || zoomChanged) {
+      const distance = prevCenter.current ? 
+        Math.sqrt(
+          Math.pow(center[0] - prevCenter.current[0], 2) + 
+          Math.pow(center[1] - prevCenter.current[1], 2)
+        ) : 0
+
+      // Only change view for large distances to preserve marker positions
+      if (distance > 2) {
+        map.setView(center, zoom, { 
+          animate: false // No animation to preserve markers
+        })
+        
+        prevCenter.current = center
+        prevZoom.current = zoom
+      }
+    }
+  }, [map, center, zoom])
 
   return null
-}
+})
+
+// MapViewController removed - functionality integrated into MapInitializer
 
 interface LeafletMapProps {
   containers: MapContainerType[]
@@ -78,18 +128,62 @@ interface LeafletMapProps {
   zoom: number
   getContainerColor: (container: MapContainerType) => string
   getStatusIcon: (container: MapContainerType) => string
-  onMapViewChange: (view: { center: [number, number]; zoom: number }) => void
 }
 
-export default function LeafletMap({
+const LeafletMap = memo(function LeafletMap({
   containers,
   center,
   zoom,
   getContainerColor,
-  getStatusIcon,
-  onMapViewChange
+  getStatusIcon
 }: LeafletMapProps) {
   const mapRef = useRef<L.Map | null>(null)
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null)
+  
+  // Force map invalidation on mount (WITHOUT fitBounds to avoid displacement)
+  useEffect(() => {
+    if (mapInstance) {
+      // Force invalidate size to fix gray zones
+      setTimeout(() => {
+        mapInstance.invalidateSize()
+        // Removed automatic fitBounds to prevent unwanted movement
+      }, 100)
+    }
+  }, [mapInstance]) // Only trigger on mapInstance change, not containers
+
+  // Memoize container markers with stable references
+  const containerMarkers = useMemo(() => {
+    const validContainers = containers.filter(c => c.latitude && c.longitude)
+    
+    return validContainers.map((container) => {
+      const color = getContainerColor(container)
+      const icon = getStatusIcon(container)
+      
+      // Create stable marker data
+      return {
+        id: container.id,
+        position: [container.latitude!, container.longitude!] as [number, number],
+        container,
+        color,
+        icon,
+        // Use container ID for stable key
+        key: `marker-${container.id}`
+      }
+    })
+  }, [containers, getContainerColor, getStatusIcon])
+
+  // Create icons separately to avoid recreation on each render
+  const createMarkerIcon = useMemo(() => {
+    const iconCache = new Map<string, L.DivIcon>()
+    
+    return (color: string, icon: string) => {
+      const cacheKey = `${color}-${icon}`
+      if (!iconCache.has(cacheKey)) {
+        iconCache.set(cacheKey, createCustomIcon(color, icon))
+      }
+      return iconCache.get(cacheKey)!
+    }
+  }, [])
 
   const getStatusBadgeColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -125,41 +219,61 @@ export default function LeafletMap({
     <MapContainer
       center={center}
       zoom={zoom}
-      style={{ height: '100%', width: '100%' }}
-      className="z-0"
+      style={{ height: '100%', width: '100%', minHeight: '400px' }}
+      className="z-0 rounded-lg overflow-hidden"
       ref={mapRef}
+      scrollWheelZoom={true}
+      touchZoom={true}
+      doubleClickZoom={true}
+      dragging={true}
+      zoomControl={true}
+      minZoom={2}
+      maxZoom={18}
+      bounds={[[-85, -180], [85, 180]]} // Prevent map from going too far
+      maxBounds={[[-90, -180], [90, 180]]} // World bounds
+      maxBoundsViscosity={1.0}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={19}
+        crossOrigin={true}
       />
       
-      <MapViewController 
+      <MapInitializer 
         center={center} 
         zoom={zoom} 
-        onMapViewChange={onMapViewChange} 
+        setMapInstance={setMapInstance}
       />
 
-      {containers.map((container) => {
-        if (!container.latitude || !container.longitude) return null
-
-        const color = getContainerColor(container)
-        const icon = getStatusIcon(container)
-        const customIcon = createCustomIcon(color, icon)
+      {containerMarkers.map((markerData) => {
+        const { position, container, color, icon, key } = markerData
+        const markerIcon = createMarkerIcon(color, icon)
 
         return (
           <Marker
-            key={container.id}
-            position={[container.latitude, container.longitude]}
-            icon={customIcon}
+            key={key}
+            position={position}
+            icon={markerIcon}
           >
-            <Popup maxWidth={400} className="container-popup">
-              <div className="p-4 min-w-[300px]">
+            <Popup 
+              maxWidth={400}
+              minWidth={320}
+              maxHeight={500}
+              autoPan={false}
+              autoClose={false}
+              closeOnEscapeKey={true}
+              closeOnClick={false}
+              closeButton={true}
+              className="container-popup"
+              keepInView={true}
+            >
+              <div className="p-3 w-full max-w-[380px]">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{icon}</span>
-                    <h3 className="font-semibold text-lg">{container.container_id}</h3>
+                    <h3 className="font-semibold text-base">{container.container_id}</h3>
                   </div>
                   <Badge className={getStatusBadgeColor(container.status)}>
                     {container.status}
@@ -241,23 +355,12 @@ export default function LeafletMap({
                     </div>
                   )}
 
-                  {/* AI Summary */}
-                  {container.ai_summary && (
-                    <div className="border-t pt-3">
-                      <p className="text-muted-foreground text-sm mb-1">AI Insight</p>
-                      <p className="text-sm italic text-gray-700 bg-blue-50 p-2 rounded">
-                        {container.ai_summary}
-                      </p>
-                    </div>
-                  )}
-
                   {/* Action Buttons */}
                   <div className="flex gap-2 pt-2">
                     <Button 
                       size="sm" 
                       className="flex-1"
                       onClick={() => {
-                        // Navigate to container details
                         window.open(`/dashboard/containers/${container.id}`, '_blank')
                       }}
                     >
@@ -273,4 +376,6 @@ export default function LeafletMap({
       })}
     </MapContainer>
   )
-}
+})
+
+export default LeafletMap

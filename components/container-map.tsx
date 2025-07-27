@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { useContainers } from '@/hooks/use-containers-query'
 import { useRealtimeSync } from '@/hooks/use-realtime-sync'
@@ -19,8 +19,8 @@ import {
 } from 'lucide-react'
 import { containers as Container } from '@/lib/generated/prisma'
 
-// Dynamic import to avoid SSR issues with Leaflet
-const LeafletMap = dynamic(() => import('./leaflet-map').then(mod => ({ default: mod.default })), {
+// Dynamic import to avoid SSR issues with Mapbox
+const MapboxContainerMap = dynamic(() => import('./mapbox-container-map').then(mod => mod.MapboxContainerMap), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[600px] bg-muted rounded-lg flex items-center justify-center">
@@ -49,60 +49,86 @@ export function ContainerMap({
   focusContainer = null,
   containers: propContainers 
 }: ContainerMapProps) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
   const [mapFilters, setMapFilters] = useState({
     showInTransit: true,
     showDelayed: true,
     showDelivered: false,
     showAll: true
   })
-  const [mapView, setMapView] = useState({
-    center: [51.505, -0.09] as [number, number],
-    zoom: 2
-  })
 
-  const { data: queryContainers = [], isLoading, error, refetch, isRefetching } = useContainers()
-  const { isConnected } = useRealtimeSync()
+  // Hooks must be called unconditionally
+  const {
+    data: queryContainers = [],
+    isLoading = false,
+    error = null,
+    refetch,
+    isRefetching = false
+  } = useContainers()
+
+  const { isConnected = false } = useRealtimeSync()
 
   // Use prop containers if provided, otherwise use query containers
   const containers = propContainers || queryContainers || []
 
-  // Transform containers with mock coordinates for demo
+  // Transform containers with stable mock coordinates for demo
   // In production, these would come from actual GPS/AIS data
-  const mapContainers: MapContainer[] = Array.isArray(containers) ? containers.map((container, index) => ({
-    ...container,
-    latitude: container.latitude || (40 + (index * 5) + Math.random() * 10 - 5), // Mock lat between 35-55
-    longitude: container.longitude || (-20 + (index * 15) + Math.random() * 20 - 10), // Mock lng spread across Atlantic
-  })) : []
-
-  // Filter containers based on current filters
-  const filteredContainers = mapContainers.filter(container => {
-    if (mapFilters.showAll) return true
+  const mapContainers: MapContainer[] = useMemo(() => {
+    if (!Array.isArray(containers)) return []
     
-    const status = container.status.toLowerCase()
-    if (mapFilters.showInTransit && status === 'in transit') return true
-    if (mapFilters.showDelayed && container.delay_hours > 0) return true
-    if (mapFilters.showDelivered && (status === 'delivered' || status === 'at destination')) return true
+    // Major shipping routes and ports for more realistic positioning
+    const shippingRoutes = [
+      { name: 'North Atlantic', lat: 50.0, lng: -30.0 },
+      { name: 'Mediterranean', lat: 36.0, lng: 15.0 },
+      { name: 'Suez Canal', lat: 30.0, lng: 32.0 },
+      { name: 'Singapore Strait', lat: 1.3, lng: 103.8 },
+      { name: 'Panama Canal', lat: 9.0, lng: -79.5 },
+      { name: 'English Channel', lat: 50.5, lng: 1.0 },
+      { name: 'North Sea', lat: 56.0, lng: 3.0 },
+      { name: 'South China Sea', lat: 15.0, lng: 115.0 }
+    ]
     
-    return false
-  })
+    return containers.map((container, index) => {
+      // Create stable coordinates based on container ID to prevent trembling
+      const hashCode = container.id ? container.id.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0)
+        return a & a
+      }, 0) : index * 1000
+      
+      // Pick a shipping route based on container index
+      const routeIndex = Math.abs(hashCode) % shippingRoutes.length
+      const baseRoute = shippingRoutes[routeIndex]
+      
+      // Add small random offset around the route (±2 degrees max)
+      const latOffset = ((hashCode % 400) - 200) / 100 // -2 to +2
+      const lngOffset = (((hashCode * 3) % 400) - 200) / 100 // -2 to +2
+      
+      return {
+        ...container,
+        latitude: container.latitude || (baseRoute.lat + latOffset),
+        longitude: container.longitude || (baseRoute.lng + lngOffset),
+      }
+    })
+  }, [containers])
 
-  const getContainerColor = (container: MapContainer) => {
-    const status = container.status.toLowerCase()
-    if (container.delay_hours > 0) return 'red'
-    if (status === 'delivered' || status === 'at destination') return 'green'
-    if (status === 'in transit') return 'blue'
-    if (status === 'loading' || status === 'unloading') return 'orange'
-    return 'gray'
-  }
+  // Filter containers based on current filters - memoized to prevent re-computation
+  const filteredContainers = useMemo(() => {
+    return mapContainers.filter(container => {
+      if (mapFilters.showAll) return true
+      
+      const status = container.status.toLowerCase()
+      if (mapFilters.showInTransit && status === 'in transit') return true
+      if (mapFilters.showDelayed && container.delay_hours > 0) return true
+      if (mapFilters.showDelivered && (status === 'delivered' || status === 'at destination')) return true
+      
+      return false
+    })
+  }, [mapContainers, mapFilters])
 
-  const getStatusIcon = (container: MapContainer) => {
-    const status = container.status.toLowerCase()
-    if (container.delay_hours > 0) return '⚠️'
-    if (status === 'delivered' || status === 'at destination') return '✅'
-    if (status === 'in transit') return '🚢'
-    if (status === 'loading' || status === 'unloading') return '🏗️'
-    return '📦'
-  }
 
   const toggleFilter = (filterKey: keyof typeof mapFilters) => {
     if (filterKey === 'showAll') {
@@ -122,18 +148,6 @@ export function ContainerMap({
     }
   }
 
-  // Focus on specific container if provided
-  useEffect(() => {
-    if (focusContainer) {
-      const container = filteredContainers.find(c => c.id === focusContainer)
-      if (container && container.latitude && container.longitude) {
-        setMapView({
-          center: [container.latitude, container.longitude],
-          zoom: 8
-        })
-      }
-    }
-  }, [focusContainer, filteredContainers])
 
   if (error) {
     return (
@@ -170,14 +184,22 @@ export function ContainerMap({
               </CardTitle>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  {isConnected ? (
-                    <Wifi className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <WifiOff className="h-4 w-4 text-red-500" />
-                  )}
-                  <span className="text-sm text-muted-foreground">
-                    {isConnected ? 'Live' : 'Offline'}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                    {isConnected ? (
+                      <Wifi className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <WifiOff className="h-4 w-4 text-red-500" />
+                    )}
+                  </div>
+                  <div className="text-sm">
+                    <div className={`font-medium ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                      {isConnected ? 'Live Updates' : 'Offline'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {isConnected ? 'Real-time tracking active' : 'Connection lost'}
+                    </div>
+                  </div>
                 </div>
                 {refetch && (
                   <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -245,7 +267,7 @@ export function ContainerMap({
       {/* Interactive Map */}
       <Card>
         <CardContent className="p-0">
-          <div style={{ height }} className="relative">
+          <div style={{ height }} className="map-wrapper relative">
             {isLoading ? (
               <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -254,13 +276,9 @@ export function ContainerMap({
                 </div>
               </div>
             ) : (
-              <LeafletMap
+              <MapboxContainerMap
                 containers={filteredContainers}
-                center={mapView.center}
-                zoom={mapView.zoom}
-                getContainerColor={getContainerColor}
-                getStatusIcon={getStatusIcon}
-                onMapViewChange={setMapView}
+                height={height}
               />
             )}
           </div>

@@ -113,7 +113,12 @@ export function useContainers() {
   return useQuery({
     queryKey: containerKeys.lists(),
     queryFn: fetchContainers,
-    staleTime: 1000 * 30, // 30 seconds
+    staleTime: 1000 * 30, // 30 seconds to reduce API calls
+    refetchInterval: 1000 * 30, // Auto-refetch every 30 seconds instead of 10
+    refetchIntervalInBackground: false, // Don't refetch when tab is not focused
+    refetchOnWindowFocus: false, // Don't refetch on window focus to avoid conflicts
+    retry: 2, // Reduce retries to prevent timeout loops
+    retryDelay: 3000, // Wait 3 seconds between retries
   })
 }
 
@@ -130,8 +135,11 @@ export function useContainerSummary() {
   return useQuery({
     queryKey: containerKeys.summary(),
     queryFn: fetchContainerSummary,
-    staleTime: 1000 * 30, // 30 seconds
-    refetchInterval: 1000 * 60, // Refetch every minute
+    staleTime: 1000 * 60, // 60 seconds
+    refetchInterval: 1000 * 120, // Refetch every 2 minutes instead of 1
+    refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: 3000,
   })
 }
 
@@ -197,7 +205,7 @@ export function useUpdateContainer() {
         description: `${updatedContainer.container_id} has been updated`,
       })
     },
-    onSettled: (data, error, { id }) => {
+    onSettled: (_, __, { id }) => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: containerKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: containerKeys.lists() })
