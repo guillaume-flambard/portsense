@@ -8,7 +8,6 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   flexRender,
-  createColumnHelper,
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
@@ -49,7 +48,7 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
-const columnHelper = createColumnHelper<Container>()
+// Remove columnHelper and use direct column definitions
 
 export function ContainersTable() {
   const [sorting, setSorting] = useState<SortingState>([])
@@ -91,7 +90,8 @@ export function ContainersTable() {
   }
 
   const columns: ColumnDef<Container>[] = [
-    columnHelper.accessor('container_id', {
+    {
+      accessorKey: 'container_id',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -106,8 +106,9 @@ export function ContainersTable() {
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue('container_id')}</div>
       ),
-    }),
-    columnHelper.accessor('status', {
+    },
+    {
+      accessorKey: 'status',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -124,8 +125,9 @@ export function ContainersTable() {
         </Badge>
       ),
       filterFn: 'includesString',
-    }),
-    columnHelper.accessor('current_location', {
+    },
+    {
+      accessorKey: 'current_location',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -142,8 +144,9 @@ export function ContainersTable() {
           {row.getValue('current_location') || 'Unknown'}
         </div>
       ),
-    }),
-    columnHelper.accessor('delay_hours', {
+    },
+    {
+      accessorKey: 'delay_hours',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -163,8 +166,9 @@ export function ContainersTable() {
           </div>
         )
       },
-    }),
-    columnHelper.accessor('risk_level', {
+    },
+    {
+      accessorKey: 'risk_level',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -182,8 +186,9 @@ export function ContainersTable() {
         </Badge>
       ),
       filterFn: 'includesString',
-    }),
-    columnHelper.accessor('last_updated', {
+    },
+    {
+      accessorKey: 'last_updated',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -202,8 +207,8 @@ export function ContainersTable() {
           </div>
         )
       },
-    }),
-    columnHelper.display({
+    },
+    {
       id: 'actions',
       header: 'Actions',
       cell: ({ row }) => (
@@ -212,7 +217,6 @@ export function ContainersTable() {
             variant="ghost"
             size="sm"
             onClick={() => {
-              // You can add edit functionality here
               console.log('Edit container:', row.original.id)
             }}
             disabled={isUpdating}
@@ -223,7 +227,6 @@ export function ContainersTable() {
             variant="ghost"
             size="sm"
             onClick={() => {
-              // Navigate to container details
               window.open(`/dashboard/containers/${row.original.id}`, '_blank')
             }}
           >
@@ -231,7 +234,7 @@ export function ContainersTable() {
           </Button>
         </div>
       ),
-    }),
+    },
   ]
 
   const table = useReactTable({

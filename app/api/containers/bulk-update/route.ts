@@ -3,6 +3,9 @@ import { createServerClient } from '@/lib/supabase/server'
 import { RealTimeContainerService, BulkContainerUpdateData } from '@/lib/services/real-time-container-service'
 import { z } from 'zod'
 
+// Force dynamic runtime for this API route
+export const dynamic = 'force-dynamic'
+
 const bulkUpdateSchema = z.object({
   updates: z.array(z.object({
     container_id: z.string(),

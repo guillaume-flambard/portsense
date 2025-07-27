@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { containerKeys } from './use-containers-query'
 import { containers as Container } from '@/lib/generated/prisma'
@@ -23,11 +23,18 @@ interface StreamMessage {
 }
 
 export function useRealtimeSync() {
+  const [isClient, setIsClient] = useState(false)
+  const [isConnected, setIsConnected] = useState(false)
   const queryClient = useQueryClient()
   const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const reconnectAttempts = useRef(0)
   const maxReconnectAttempts = 5
+
+  // Check if we're on the client side
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const handleContainerUpdate = useCallback((update: ContainerUpdate) => {
     const { container, changeType } = update
@@ -126,6 +133,11 @@ export function useRealtimeSync() {
   }, [])
 
   const connect = useCallback(() => {
+    if (!isClient || typeof window === 'undefined' || !window.EventSource) {
+      console.warn('EventSource not available (SSR or browser does not support it)')
+      return
+    }
+
     if (eventSourceRef.current) {
       return // Already connected
     }
@@ -136,6 +148,7 @@ export function useRealtimeSync() {
 
       eventSource.onopen = () => {
         console.log('Real-time sync connected')
+        setIsConnected(true)
         reconnectAttempts.current = 0
       }
 
@@ -168,6 +181,7 @@ export function useRealtimeSync() {
 
       eventSource.onerror = (error) => {
         console.error('Real-time sync error:', error)
+        setIsConnected(false)
         
         if (eventSource.readyState === EventSource.CLOSED) {
           // Attempt to reconnect with exponential backoff
@@ -198,7 +212,7 @@ export function useRealtimeSync() {
       console.error('Failed to create EventSource:', error)
       toast.error('Failed to establish real-time connection')
     }
-  }, [handleContainerUpdate])
+  }, [isClient, handleContainerUpdate])
 
   const disconnect = useCallback(() => {
     if (eventSourceRef.current) {
@@ -211,6 +225,7 @@ export function useRealtimeSync() {
       reconnectTimeoutRef.current = null
     }
     
+    setIsConnected(false)
     reconnectAttempts.current = 0
   }, [])
 
@@ -226,6 +241,8 @@ export function useRealtimeSync() {
 
   // Handle page visibility changes
   useEffect(() => {
+    if (!isClient || typeof document === 'undefined') return
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // Page is now hidden, disconnect to save resources
@@ -241,11 +258,11 @@ export function useRealtimeSync() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [connect, disconnect])
+  }, [isClient, connect, disconnect])
 
   return {
     connect,
     disconnect,
-    isConnected: eventSourceRef.current?.readyState === EventSource.OPEN,
+    isConnected: isClient && isConnected,
   }
 }

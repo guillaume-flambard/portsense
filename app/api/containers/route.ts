@@ -4,6 +4,9 @@ import { createServerClient } from '@/lib/supabase/server'
 import { ContainerService } from '@/lib/services/container-service'
 import { MarineTrackingAPI } from '@/lib/mock-data/marine-api'
 
+// Force dynamic runtime for this API route
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()

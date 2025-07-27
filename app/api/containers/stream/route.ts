@@ -2,6 +2,9 @@ import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { RealTimeContainerService, ContainerStatusChange } from '@/lib/services/real-time-container-service'
 
+// Force dynamic runtime for this API route
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()

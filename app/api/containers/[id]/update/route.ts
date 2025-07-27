@@ -3,6 +3,9 @@ import { createServerClient } from '@/lib/supabase/server'
 import { RealTimeContainerService } from '@/lib/services/real-time-container-service'
 import { z } from 'zod'
 
+// Force dynamic runtime for this API route
+export const dynamic = 'force-dynamic'
+
 const containerUpdateSchema = z.object({
   status: z.string().optional(),
   current_location: z.string().optional(),

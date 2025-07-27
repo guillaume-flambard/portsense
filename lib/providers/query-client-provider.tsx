@@ -48,9 +48,7 @@ export function QueryClientProviderWrapper({
     <QueryClientProvider client={queryClient}>
       {children}
       <ReactQueryDevtools 
-        initialIsOpen={false} 
-        position="bottom-right"
-        buttonPosition="bottom-right"
+        initialIsOpen={false}
       />
     </QueryClientProvider>
   )

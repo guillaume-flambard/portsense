@@ -51,7 +51,8 @@ async function fetchContainers(): Promise<Container[]> {
   if (!response.ok) {
     throw new Error(`Failed to fetch containers: ${response.statusText}`)
   }
-  return response.json()
+  const data = await response.json()
+  return data.containers || []
 }
 
 async function fetchContainer(id: string): Promise<Container> {
@@ -59,7 +60,8 @@ async function fetchContainer(id: string): Promise<Container> {
   if (!response.ok) {
     throw new Error(`Failed to fetch container: ${response.statusText}`)
   }
-  return response.json()
+  const data = await response.json()
+  return data.container || data
 }
 
 async function fetchContainerSummary(): Promise<ContainerSummary> {
